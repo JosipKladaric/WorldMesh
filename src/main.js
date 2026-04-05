@@ -16,9 +16,10 @@ class Engine3D {
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(window.devicePixelRatio);
-        document.getElementById('game-container').appendChild(this.renderer.domElement);
+        const container = document.getElementById('game-viewport');
+        container.appendChild(this.renderer.domElement);
 
-        this.controls = new PointerLockControls(this.camera, document.body);
+        this.controls = new PointerLockControls(this.camera, this.renderer.domElement);
         this.network = null;
         this.remotePlayers = new Map(); // id -> THREE.Object3D
 
@@ -32,6 +33,7 @@ class Engine3D {
         this.setupWorld();
         this.setupEvents();
         
+        this.onWindowResize();
         this.animate();
     }
 
@@ -96,17 +98,14 @@ class Engine3D {
             if (!this.network) this.network = new PeerManager(this);
         };
 
-        // Re-lock on click if already entered the world, but ignore HUD clicks
-        document.body.addEventListener('mousedown', (e) => {
-            if (e.target.closest('#game-hud')) return; // Ignore clicks on the UI
-            
+        // Re-lock on click if already entered the world (Scoped to viewport)
+        document.getElementById('game-viewport').addEventListener('mousedown', () => {
             if (joinScreen.classList.contains('hidden') && !this.controls.isLocked) {
                 this.controls.lock();
             }
         });
 
-        document.getElementById('share-btn').onclick = (e) => {
-            e.stopPropagation(); // Prevent re-locking when just clicking UI
+        document.getElementById('share-btn').onclick = () => {
             if (this.network) {
                 const link = this.network.getInviteLink();
                 navigator.clipboard.writeText(link);
@@ -129,9 +128,13 @@ class Engine3D {
     }
 
     onWindowResize() {
-        this.camera.aspect = window.innerWidth / window.innerHeight;
+        const container = document.getElementById('game-viewport');
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+        
+        this.camera.aspect = width / height;
         this.camera.updateProjectionMatrix();
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setSize(width, height);
     }
 
     updateNetwork() {
