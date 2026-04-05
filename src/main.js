@@ -14,6 +14,10 @@ class Engine3D {
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         this.camera.position.set(0, 1.7, 5); // Start at eye-level
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
+        
+        this.player = { hp: 100, maxHp: 100, name: 'Sojourner' };
+        this.bullets = []; // Local and remote projectiles
+        this.remotePlayers = new Map(); // id -> { mesh, targetPos, targetRot, hp, nameLabel }
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(window.devicePixelRatio);
         const container = document.getElementById('game-viewport');
@@ -88,8 +92,11 @@ class Engine3D {
     setupEvents() {
         const joinScreen = document.getElementById('join-screen');
         const hud = document.getElementById('game-hud');
-
+        // HUD Controls
         document.getElementById('enter-btn').onclick = () => {
+            const nameInput = document.getElementById('player-name').value.trim();
+            if (nameInput) this.player.name = nameInput;
+            
             this.controls.lock();
             joinScreen.classList.add('hidden');
             hud.classList.remove('hidden');
@@ -99,9 +106,14 @@ class Engine3D {
         };
 
         // Re-lock on click if already entered the world (Scoped to viewport)
-        document.getElementById('game-viewport').addEventListener('mousedown', () => {
-            if (joinScreen.classList.contains('hidden') && !this.controls.isLocked) {
-                this.controls.lock();
+        document.getElementById('game-viewport').addEventListener('mousedown', (e) => {
+            if (joinScreen.classList.contains('hidden')) {
+                if (!this.controls.isLocked) {
+                    this.controls.lock();
+                } else {
+                    // Fire Bullet
+                    this.fireBullet();
+                }
             }
         });
 
@@ -143,9 +155,50 @@ class Engine3D {
                 x: this.camera.position.x,
                 y: this.camera.position.y,
                 z: this.camera.position.z,
-                ry: this.camera.rotation.y
+                ry: this.camera.rotation.y,
+                hp: this.player.hp,
+                name: this.player.name
             });
         }
+    }
+
+    fireBullet() {
+        const dir = new THREE.Vector3();
+        this.camera.getWorldDirection(dir);
+        
+        const pos = this.camera.position.clone();
+        
+        const bullet = this.createBulletBody(pos, dir, 'local');
+        this.bullets.push(bullet);
+
+        if (this.network) {
+            this.network.broadcast('SHOOT', { 
+                pos: { x: pos.x, y: pos.y, z: pos.z }, 
+                dir: { x: dir.x, y: dir.y, z: dir.z } 
+            });
+        }
+    }
+
+    createBulletBody(pos, dir, ownerId) {
+        const geo = new THREE.SphereGeometry(0.15, 8, 8);
+        const mat = new THREE.MeshBasicMaterial({ color: ownerId === 'local' ? 0x00ffd2 : 0xff3300 });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.copy(pos);
+        this.scene.add(mesh);
+        
+        return {
+            mesh,
+            dir,
+            owner: ownerId,
+            born: performance.now()
+        };
+    }
+
+    onRemoteShoot(id, data) {
+        const pos = new THREE.Vector3(data.pos.x, data.pos.y, data.pos.z);
+        const dir = new THREE.Vector3(data.dir.x, data.dir.y, data.dir.z);
+        const bullet = this.createBulletBody(pos, dir, id);
+        this.bullets.push(bullet);
     }
 
     updateRemotePlayers(id, data) {
@@ -165,18 +218,41 @@ class Engine3D {
             const mesh = new THREE.Mesh(geometry, material);
             group.add(mesh);
 
+            // Glowing Core
             const coreGeo = new THREE.SphereGeometry(0.4, 8, 8);
             const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
             const core = new THREE.Mesh(coreGeo, coreMat);
             core.position.y = 0.5;
             group.add(core);
 
+            // 3D Health Bar (Layered for Zero-Clipping)
+            const hbGeo = new THREE.BoxGeometry(2, 0.2, 0.1);
+            const hbBg = new THREE.Mesh(hbGeo, new THREE.MeshBasicMaterial({ 
+                color: 0x000000, 
+                transparent: true, 
+                opacity: 0.5 
+            }));
+            const hbFg = new THREE.Mesh(hbGeo, new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
+            hbBg.position.y = 3;
+            hbFg.position.y = 3;
+            hbFg.position.z = 0.06; // Significant offset to avoid Z-fighting
+            group.add(hbBg);
+            group.add(hbFg);
+
+            // Name Label (Sprite)
+            const label = this.createNameLabel(data.name || 'Sojourner');
+            label.position.y = 3.8;
+            group.add(label);
+
             this.scene.add(group);
             
             playerRecord = {
                 mesh: group,
+                healthBar: hbFg,
+                nameLabel: label,
                 targetPos: new THREE.Vector3(data.x, data.y - 0.5, data.z),
-                targetRot: data.ry
+                targetRot: data.ry,
+                hp: data.hp || 100
             };
             this.remotePlayers.set(id, playerRecord);
             this.log(`Peer detected in the grid.`, 'accent');
@@ -185,8 +261,35 @@ class Engine3D {
         // Update Targets (Interpolation targets)
         playerRecord.targetPos.set(data.x, data.y - 0.5, data.z);
         playerRecord.targetRot = data.ry;
+        playerRecord.hp = data.hp;
         
+        // Update Health Bar Visuals
+        const scale = Math.max(0, playerRecord.hp / 100);
+        playerRecord.healthBar.scale.x = scale;
+        playerRecord.healthBar.position.x = (1 - scale) * -1; // Align to left
+
         document.getElementById('peer-count').innerText = this.remotePlayers.size;
+    }
+
+    createNameLabel(text) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 256;
+        canvas.height = 128;
+        
+        ctx.fillStyle = 'rgba(0,0,0,0)';
+        ctx.fillRect(0,0,256,128);
+        
+        ctx.font = 'bold 36px Outfit, sans-serif';
+        ctx.fillStyle = '#00ffd2';
+        ctx.textAlign = 'center';
+        ctx.fillText(text.toUpperCase(), 128, 64);
+        
+        const texture = new THREE.CanvasTexture(canvas);
+        const mat = new THREE.SpriteMaterial({ map: texture });
+        const sprite = new THREE.Sprite(mat);
+        sprite.scale.set(4, 2, 1);
+        return sprite;
     }
 
     removeRemotePlayer(id) {
@@ -238,13 +341,50 @@ class Engine3D {
         }
 
         // Interpolate Remote Players
+        const now = performance.now();
         this.remotePlayers.forEach(p => {
             p.mesh.position.lerp(p.targetPos, 0.15); // Smooth Glide
             
-            // Simple rotation lerp
             const rotDiff = p.targetRot - p.mesh.rotation.y;
             p.mesh.rotation.y += rotDiff * 0.15;
+            
+            // Look at camera for 3D health bar bills (not needed if it's a child, but helps)
+            p.mesh.children.filter(c => c.type === 'Mesh' && c.geometry.type === 'BoxGeometry').forEach(bar => {
+                bar.lookAt(this.camera.position);
+            });
         });
+
+        // Update Bullets
+        for (let i = this.bullets.length - 1; i >= 0; i--) {
+            const b = this.bullets[i];
+            b.mesh.position.addScaledVector(b.dir, 1.5); // Bullet Speed
+
+            // Lifespan
+            if (now - b.born > 3000) {
+                this.scene.remove(b.mesh);
+                this.bullets.splice(i, 1);
+                continue;
+            }
+
+            // Hit Detection (Local Only for simplicity - if I hit someone, I tell them)
+            if (b.owner === 'local') {
+                this.remotePlayers.forEach((p, id) => {
+                    const dist = b.mesh.position.distanceTo(p.mesh.position);
+                    if (dist < 2.5) { // Hit box size
+                        this.scene.remove(b.mesh);
+                        this.bullets.splice(i, 1);
+                        this.network.sendTo(id, 'TAKE_DAMAGE', { amount: 15 });
+                        this.log(`Direct hit on peer!`, 'accent');
+                    }
+                });
+            }
+        }
+
+        // Display local HP in HUD
+        const hpLabel = document.getElementById('peer-id');
+        if (hpLabel && this.network) {
+            hpLabel.innerText = `${this.network.persistentId.substring(0,6)} [HP: ${this.player.hp}]`;
+        }
 
         this.renderer.render(this.scene, this.camera);
     }
