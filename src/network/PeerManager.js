@@ -67,6 +67,11 @@ export class PeerManager {
         });
 
         this.peer.on('error', (err) => {
+            // Suppress the cluttered console logs for offline peers in the bootstrap list
+            if (err.type === 'peer-unavailable' || err.type === 'unavailable-id') {
+                console.log('Mesh peer scan: Peer is currently offline');
+                return;
+            }
             console.error('Peer 3D error:', err);
         });
     }
@@ -121,7 +126,8 @@ export class PeerManager {
                     z: this.game.camera.position.z,
                     ry: this.game.camera.rotation.y
                 },
-                peers: Array.from(this.knownPeers) // Transmitting the contact book
+                peers: Array.from(this.knownPeers), // Transmitting the contact book
+                name: this.game.player.name // Syncing name on first contact
             });
         });
 
@@ -144,7 +150,7 @@ export class PeerManager {
                 payload.peers.forEach(pId => {
                     if (pId !== this.peer.id) this.connectToPeer(pId);
                 });
-                this.game.updateRemotePlayers(conn.peer, payload.pos);
+                this.game.updateRemotePlayers(conn.peer, { ...payload.pos, name: payload.name });
                 break;
             
             case 'GOSSIP':
@@ -159,6 +165,21 @@ export class PeerManager {
                 });
                 break;
             
+            case 'SHOOT':
+                this.game.onRemoteShoot(conn.peer, payload);
+                break;
+
+            case 'TAKE_DAMAGE':
+                this.game.player.hp -= payload.amount;
+                this.game.log(`Critical Hit received!`, 'dimmed');
+                if (this.game.player.hp <= 0) {
+                    this.game.log(`REBOOTING SYSTEM...`, 'accent');
+                    this.game.player.hp = 100;
+                    this.game.camera.position.set(0, 1.7, 5);
+                }
+                this.game.updateNetwork(); // Immediate broadcast of new HP
+                break;
+
             case 'MOVE':
                 this.game.updateRemotePlayers(conn.peer, payload);
                 break;
@@ -169,6 +190,11 @@ export class PeerManager {
         this.connections.forEach(conn => {
             this.send(conn, type, payload);
         });
+    }
+
+    sendTo(peerId, type, payload) {
+        const conn = this.connections.get(peerId);
+        if (conn) this.send(conn, type, payload);
     }
 
     send(conn, type, payload) {
