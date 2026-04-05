@@ -96,8 +96,10 @@ class Engine3D {
             if (!this.network) this.network = new PeerManager(this);
         };
 
-        // Re-lock on click if already entered the world
-        document.body.addEventListener('mousedown', () => {
+        // Re-lock on click if already entered the world, but ignore HUD clicks
+        document.body.addEventListener('mousedown', (e) => {
+            if (e.target.closest('#game-hud')) return; // Ignore clicks on the UI
+            
             if (joinScreen.classList.contains('hidden') && !this.controls.isLocked) {
                 this.controls.lock();
             }
