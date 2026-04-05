@@ -23,29 +23,41 @@ body {
     width: 100vw;
 }
 
-canvas {
-    display: block;
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-}
-
-#game-container {
-    position: relative;
+#game-app {
+    display: flex;
+    flex-direction: column;
     width: 100%;
     height: 100vh;
+}
+
+/* --- System HUD (Top Bar) --- */
+.glass-bar {
+    background: var(--glass);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 200;
+    flex-shrink: 0;
+}
+
+.stats-left { display: flex; gap: 8px; }
+.controls-right { display: flex; gap: 8px; }
+
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+#game-viewport {
+    position: relative;
+    flex-grow: 1;
+    overflow: hidden;
     background: #000;
 }
-
-/* --- HUD & UI Panels --- */
-#ui-overlay {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    z-index: 100;
-}
-
-#ui-overlay * { pointer-events: auto; }
 
 .glass-panel {
     background: var(--glass);
@@ -113,20 +125,15 @@ canvas {
     box-shadow: 0 0 20px var(--accent);
 }
 
-/* --- In-Game HUD --- */
-#game-hud {
+/* --- In-Game Stats --- */
+#p2p-log {
     position: absolute;
-    inset: 0;
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-
-.stats-top {
-    display: flex;
-    gap: 12px;
-    align-items: center;
+    bottom: 24px;
+    left: 24px;
+    pointer-events: none;
+    max-width: 320px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
 }
 
 .stat-badge {
@@ -164,6 +171,5 @@ canvas {
 .log-entry { margin-top: 4px; border-left: 2px solid var(--accent); padding-left: 10px; }
 
 .hidden {
-    opacity: 0;
-    pointer-events: none !important;
+    display: none !important;
 }
