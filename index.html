@@ -23,29 +23,31 @@
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 </head>
 <body>
-    <div id="game-container">
-        <!-- Canvas will be injected here -->
-        
-        <!-- HUD Overlay -->
-        <div id="ui-overlay">
+    <div id="game-app">
+        <!-- Top System HUD (Outside 3D Viewport) -->
+        <header id="game-hud" class="glass-bar hidden">
+            <div class="stats-left">
+                <div class="stat-badge"><span class="label">PEER:</span> <span id="peer-id">...</span></div>
+                <div class="stat-badge"><span class="label">PEERS:</span> <span id="peer-count">0</span></div>
+            </div>
+            <div class="controls-right">
+                <button id="share-btn" class="glass-btn primary">INVITE PLAYER</button>
+            </div>
+        </header>
+
+        <!-- Main Viewport Area -->
+        <main id="game-viewport">
             <div id="join-screen" class="glass-panel">
                 <h1 class="logo">SOJOURNER 3D</h1>
                 <p class="tagline">Mesh-Networked Procedural Realm</p>
                 <div class="controls-hint">WASD to Move | MOUSE to Look</div>
                 <button id="enter-btn">ENTER SHARED WORLD</button>
             </div>
-
-            <div id="game-hud" class="hidden">
-                <div class="stats-top">
-                    <div class="stat-badge"><span class="label">PEER:</span> <span id="peer-id">...</span></div>
-                    <div class="stat-badge"><span class="label">PEERS:</span> <span id="peer-count">0</span></div>
-                    <button id="share-btn">INVITE PLAYER</button>
-                </div>
-                <div id="p2p-log">
-                    <div class="log-entry">Searching for mesh network...</div>
-                </div>
+            
+            <div id="p2p-log">
+                <div class="log-entry">Searching for mesh network...</div>
             </div>
-        </div>
+        </main>
     </div>
     
     <!-- Entry Script -->
