@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sojourner 3D: Peer Mesh</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="src/style.css">
+    
+    <!-- External Libraries (Zero Building Steps) -->
+    <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+</head>
+<body>
+    <div id="game-container">
+        <!-- Canvas will be injected here -->
+        
+        <!-- HUD Overlay -->
+        <div id="ui-overlay">
+            <div id="join-screen" class="glass-panel">
+                <h1 class="logo">SOJOURNER 3D</h1>
+                <p class="tagline">Mesh-Networked Procedural Realm</p>
+                <div class="controls-hint">WASD to Move | MOUSE to Look</div>
+                <button id="enter-btn">ENTER SHARED WORLD</button>
+            </div>
+
+            <div id="game-hud" class="hidden">
+                <div class="stats-top">
+                    <div class="stat-badge"><span class="label">PEER:</span> <span id="peer-id">...</span></div>
+                    <div class="stat-badge"><span class="label">PEERS:</span> <span id="peer-count">0</span></div>
+                    <button id="share-btn">INVITE PLAYER</button>
+                </div>
+                <div id="p2p-log">
+                    <div class="log-entry">Searching for mesh network...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Entry Script -->
+    <script type="module" src="src/main.js"></script>
+</body>
+</html>

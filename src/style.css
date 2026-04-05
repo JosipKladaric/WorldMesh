@@ -1,0 +1,169 @@
+:root {
+    --bg-dark: #050505;
+    --accent: #00ffd2;
+    --accent-blue: #00d1ff;
+    --glass: rgba(10, 10, 15, 0.7);
+    --border: rgba(255, 255, 255, 0.1);
+    --font-main: 'Outfit', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: #fff;
+    font-family: var(--font-main);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+}
+
+canvas {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+}
+
+#game-container {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    background: #000;
+}
+
+/* --- HUD & UI Panels --- */
+#ui-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 100;
+}
+
+#ui-overlay * { pointer-events: auto; }
+
+.glass-panel {
+    background: var(--glass);
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+#join-screen {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    max-width: 450px;
+    width: 90%;
+    transition: opacity 0.5s ease;
+}
+
+.logo {
+    font-size: 48px;
+    font-weight: 900;
+    letter-spacing: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-blue));
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+}
+
+.tagline {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    color: rgba(255, 255, 255, 0.4);
+    margin-bottom: 30px;
+}
+
+.controls-hint {
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: 1px;
+    margin-bottom: 40px;
+    font-weight: 600;
+}
+
+#enter-btn {
+    background: var(--accent);
+    color: #000;
+    padding: 15px 40px;
+    border: none;
+    border-radius: 12px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+#enter-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 20px var(--accent);
+}
+
+/* --- In-Game HUD --- */
+#game-hud {
+    position: absolute;
+    inset: 0;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.stats-top {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.stat-badge {
+    background: var(--glass);
+    padding: 10px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent);
+}
+
+.stat-badge .label { color: rgba(255, 255, 255, 0.3); margin-right: 8px; }
+
+#share-btn {
+    background: #222;
+    color: #eee;
+    border: 1px solid var(--border);
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+#share-btn:hover { background: #333; }
+
+#p2p-log {
+    max-width: 320px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.log-entry { margin-top: 4px; border-left: 2px solid var(--accent); padding-left: 10px; }
+
+.hidden {
+    opacity: 0;
+    pointer-events: none !important;
+}
