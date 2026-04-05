@@ -125,6 +125,20 @@ canvas {
     box-shadow: 0 0 20px var(--accent);
 }
 
+.name-entry { margin-bottom: 20px; }
+#player-name {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border);
+    padding: 12px 20px;
+    border-radius: 8px;
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    text-align: center;
+    width: 240px;
+}
+#player-name:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 10px var(--accent); }
+
 /* --- In-Game Stats --- */
 #p2p-log {
     position: absolute;
